@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Raw + normalized event data pulled from a source adapter (Ticketmaster, Eventbrite, Meetup, ...).
+// sourceName + sourceEventId uniquely identifies an event within its origin API, used to dedupe on refresh.
+model Event {
+  id            String   @id @default(cuid())
+  sourceName    String
+  sourceEventId String
+  title         String
+  description   String?
+  url           String
+  startTime     DateTime
+  endTime       DateTime?
+  venueName     String?
+  city          String?
+  genre         String?
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  savedEvent SavedEvent?
+
+  @@unique([sourceName, sourceEventId])
+  @@index([startTime])
+  @@index([genre])
+  @@index([city])
+}
+
+// An event the (single) user of this instance has chosen to add to their calendar.
+// Presence of a row here is what makes an event show up in the generated iCal feed.
+model SavedEvent {
+  id      String   @id @default(cuid())
+  eventId String   @unique
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  savedAt DateTime @default(now())
+}
+
+// Singleton row holding instance-level config, notably the secret token used in the iCal feed URL.
+model InstanceSettings {
+  id        Int    @id @default(1)
+  feedToken String @unique @default(cuid())
+}

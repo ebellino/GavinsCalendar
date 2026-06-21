@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://gavin:gavin@db:5432/gavin_bot?schema=public
+      TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
+      SEATGEEK_CLIENT_ID: ${SEATGEEK_CLIENT_ID:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: gavin
+      POSTGRES_PASSWORD: gavin
+      POSTGRES_DB: gavin_bot
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gavin -d gavin_bot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db_data:
