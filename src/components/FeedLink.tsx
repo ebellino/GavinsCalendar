@@ -6,7 +6,7 @@ export function FeedLink({ feedUrl }: { feedUrl: string }) {
   const [copied, setCopied] = useState(false);
 
   return (
-    <div className="border rounded-lg p-4 bg-gray-50 flex flex-col gap-2">
+    <div className="border rounded-lg p-4 bg-gray-50 text-gray-900 flex flex-col gap-2">
       <p className="text-sm font-medium">
         Your calendar feed — add this URL once via &quot;Subscribe to Calendar&quot; in
         Google/Apple/Outlook Calendar to see saved events automatically.
@@ -15,7 +15,7 @@ export function FeedLink({ feedUrl }: { feedUrl: string }) {
         <input
           readOnly
           value={feedUrl}
-          className="border rounded px-3 py-2 flex-1 text-sm bg-white"
+          className="border rounded px-3 py-2 flex-1 text-sm bg-white text-gray-900"
           onFocus={(e) => e.currentTarget.select()}
         />
         <button

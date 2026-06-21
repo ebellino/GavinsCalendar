@@ -36,7 +36,7 @@ export function EventCard({
         <button
           type="submit"
           className={`rounded px-3 py-2 text-sm ${
-            isSaved ? "bg-gray-200" : "bg-black text-white"
+            isSaved ? "bg-gray-200 text-gray-900" : "bg-black text-white"
           }`}
         >
           {isSaved ? "Saved ✓" : "Save"}
