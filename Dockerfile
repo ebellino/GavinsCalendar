@@ -7,6 +7,10 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Generating the Prisma client only reads the schema file, it never connects -
+# but prisma.config.ts requires DATABASE_URL to be set just to load, so a
+# placeholder is enough here. The real value is injected at runtime by Compose.
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 RUN npx prisma generate
 RUN npm run build
 

@@ -7,6 +7,7 @@ services:
       DATABASE_URL: postgresql://gavin:gavin@db:5432/gavin_bot?schema=public
       TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
       SEATGEEK_CLIENT_ID: ${SEATGEEK_CLIENT_ID:-}
+      GITHUB_REPO: ${GITHUB_REPO:-}
     depends_on:
       db:
         condition: service_healthy
