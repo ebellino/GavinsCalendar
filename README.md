@@ -79,6 +79,13 @@ from the project folder run:
 docker compose up -d --build
 ```
 
+## Security note
+
+There's no login on this app — it's designed to run on your own computer for your own use.
+By default it only listens on `localhost`, so nothing on your network can reach it. If you edit
+`docker-compose.yml` to expose it more widely (e.g. to use it from your phone), anyone who can
+reach that address can view and edit your saved events, since there's nothing to stop them.
+
 ## Local development (without Docker)
 
 ```bash

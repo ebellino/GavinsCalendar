@@ -2,7 +2,11 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      # Bound to localhost only - the app has no login, so anyone who can
+      # reach this port can read/save your events. Change to "3000:3000" if
+      # you want to access it from another device on your network, but know
+      # that opens it to your whole LAN.
+      - "127.0.0.1:3000:3000"
     environment:
       DATABASE_URL: postgresql://gavin:gavin@db:5432/gavin_bot?schema=public
       TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
@@ -16,7 +20,10 @@ services:
   db:
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      # Bound to localhost only, just so `npx prisma migrate dev` can reach it
+      # from the host during development. Never expose this beyond localhost -
+      # it uses a fixed, public default password since it's Docker-internal only.
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: gavin
       POSTGRES_PASSWORD: gavin
