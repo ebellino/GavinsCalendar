@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/evan_/.claude/projects/C--Users-evan--OneDrive-Projects-gavin-bot/**)",
+      "Read(//c/Users/evan_/.claude/projects/C--Users-evan--OneDrive-Projects-gavin-bot/memory/**)",
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(npx --yes create-next-app@latest . --typescript --eslint --tailwind --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)"
+    ]
+  }
+}
