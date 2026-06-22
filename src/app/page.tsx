@@ -5,6 +5,7 @@ import { getOrCreateFeedToken } from "@/lib/instance";
 import { SearchForm } from "@/components/SearchForm";
 import { EventCard } from "@/components/EventCard";
 import { FeedLink } from "@/components/FeedLink";
+import { DiscoverLocalSources } from "@/components/DiscoverLocalSources";
 
 type SearchParams = { keyword?: string; genre?: string; city?: string };
 
@@ -47,6 +48,7 @@ export default async function Home({
     <main className="max-w-3xl mx-auto p-6 flex flex-col gap-6">
       <h1 className="text-2xl font-bold">Event Calendar</h1>
       <FeedLink feedUrl={feedUrl} />
+      <DiscoverLocalSources defaultCity={query.city} />
       <SearchForm defaultValues={query} />
       <div className="flex flex-col gap-3">
         {events.length === 0 && (

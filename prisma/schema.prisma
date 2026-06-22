@@ -54,3 +54,16 @@ model InstanceSettings {
   id        Int    @id @default(1)
   feedToken String @unique @default(cuid())
 }
+
+// A user-approved iCal feed for a specific local venue/organization, found via the
+// "Discover Local Sources" flow and confirmed by the user before being trusted as a
+// permanent event source. Scoped to a city so discovery/search stays geographically bounded.
+model LocalFeedSource {
+  id        String   @id @default(cuid())
+  city      String
+  url       String   @unique
+  label     String
+  addedAt   DateTime @default(now())
+
+  @@index([city])
+}
