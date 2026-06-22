@@ -47,7 +47,31 @@ function findFeedLinkInHtml(html: string, pageUrl: string): string | null {
   return null;
 }
 
+// Google Calendar "render" viewer links embed the real feed as a ?cid= param -
+// either a direct ICS URL, or a bare calendar ID that needs the public export path.
+function unwrapGoogleCalendarRenderUrl(candidateUrl: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(candidateUrl);
+  } catch {
+    return null;
+  }
+  if (parsed.hostname !== "calendar.google.com" || !parsed.pathname.includes("/calendar/render")) {
+    return null;
+  }
+  const cid = parsed.searchParams.get("cid");
+  if (!cid) return null;
+  if (cid.startsWith("http")) return cid;
+  return `https://calendar.google.com/calendar/ical/${encodeURIComponent(cid)}/public/basic.ics`;
+}
+
 async function resolveFeedUrl(candidateUrl: string): Promise<string | null> {
+  // Must run before the .ics shortcut below: a render URL's *own* querystring
+  // can end in ".ics" (because the wrapped inner URL does), which would
+  // otherwise wrongly short-circuit to treating the wrapper page as the feed.
+  const unwrapped = unwrapGoogleCalendarRenderUrl(candidateUrl);
+  if (unwrapped) return unwrapped;
+
   if (candidateUrl.endsWith(".ics")) return candidateUrl;
 
   const res = await fetchWithTimeout(candidateUrl);
@@ -56,13 +80,22 @@ async function resolveFeedUrl(candidateUrl: string): Promise<string | null> {
   if (!contentType.includes("text/html")) return null;
 
   const html = await res.text();
-  return findFeedLinkInHtml(html, candidateUrl);
+  const linkedUrl = findFeedLinkInHtml(html, candidateUrl);
+  if (!linkedUrl) return null;
+
+  // The extracted link can itself be a Google Calendar render wrapper rather
+  // than a raw .ics file - unwrap it the same way as the top-level candidate.
+  return unwrapGoogleCalendarRenderUrl(linkedUrl) ?? linkedUrl;
 }
 
-async function validateFeed(feedUrl: string, city: string): Promise<{ eventCount: number; cityMatch: boolean } | null> {
+async function validateFeed(
+  feedUrl: string,
+  city: string,
+  label: string
+): Promise<{ eventCount: number; cityMatch: boolean } | null> {
   const data = await ical.async.fromURL(feedUrl);
   let eventCount = 0;
-  let cityMatch = false;
+  let locationMatch = false;
   const cityLower = city.toLowerCase();
 
   for (const key of Object.keys(data)) {
@@ -70,8 +103,15 @@ async function validateFeed(feedUrl: string, city: string): Promise<{ eventCount
     if (!component || component.type !== "VEVENT") continue;
     eventCount++;
     const location = typeof component.location === "string" ? component.location : "";
-    if (location.toLowerCase().includes(cityLower)) cityMatch = true;
+    if (location.toLowerCase().includes(cityLower)) locationMatch = true;
   }
+
+  // Per-event LOCATION text often omits the city entirely even for a genuinely
+  // local feed (e.g. a university's own calendar rarely repeats its own city in
+  // every event) - the source's own label/URL mentioning the city is just as
+  // good a signal, and avoids mislabeling good sources as "unconfirmed".
+  const sourceMatch = label.toLowerCase().includes(cityLower) || feedUrl.toLowerCase().includes(cityLower);
+  const cityMatch = locationMatch || sourceMatch;
 
   return eventCount > 0 ? { eventCount, cityMatch } : null;
 }
@@ -85,23 +125,34 @@ export async function discoverLocalFeeds(city: string): Promise<DiscoveryCandida
 
   const seen = new Set<string>();
   const candidates: { url: string; label: string }[] = [];
-  for (const result of searchResults) {
-    if (result.status !== "fulfilled") continue;
+  for (const [i, result] of searchResults.entries()) {
+    if (result.status !== "fulfilled") {
+      console.error(`Discovery query "${queries[i]}" failed:`, result.reason);
+      continue;
+    }
     for (const item of result.value) {
       if (seen.has(item.url)) continue;
       seen.add(item.url);
       candidates.push({ url: item.url, label: item.title || new URL(item.url).hostname });
     }
   }
+  console.log(`Discovery for "${city}": ${candidates.length} unique candidate URL(s) from Tavily`);
 
   const toCheck = candidates.slice(0, MAX_CANDIDATES_TO_VALIDATE);
 
   const validated = await Promise.allSettled(
     toCheck.map(async (candidate) => {
       const feedUrl = await resolveFeedUrl(candidate.url);
-      if (!feedUrl) return null;
-      const result = await validateFeed(feedUrl, city);
-      if (!result) return null;
+      if (!feedUrl) {
+        console.log(`  rejected (no feed link found): ${candidate.url}`);
+        return null;
+      }
+      const result = await validateFeed(feedUrl, city, candidate.label);
+      if (!result) {
+        console.log(`  rejected (not a parseable/non-empty ICS feed): ${feedUrl}`);
+        return null;
+      }
+      console.log(`  accepted: ${feedUrl} (${result.eventCount} events, cityMatch=${result.cityMatch})`);
       return {
         url: feedUrl,
         label: candidate.label,
@@ -110,6 +161,12 @@ export async function discoverLocalFeeds(city: string): Promise<DiscoveryCandida
       } satisfies DiscoveryCandidate;
     })
   );
+
+  for (const [i, result] of validated.entries()) {
+    if (result.status === "rejected") {
+      console.error(`  error validating ${toCheck[i].url}:`, result.reason);
+    }
+  }
 
   return validated
     .flatMap((result) => (result.status === "fulfilled" && result.value ? [result.value] : []))
