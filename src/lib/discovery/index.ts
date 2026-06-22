@@ -10,6 +10,8 @@ export type DiscoveryCandidate = {
 
 // Bounded, fixed set of query templates - keeps each discovery run to a small,
 // predictable number of API calls rather than open-ended crawling.
+// Split into civic/institutional sources (more likely to publish a clean ICS
+// feed) and venue/nightlife sources (less likely to, but the actual goal).
 function buildQueries(city: string): string[] {
   return [
     `${city} community calendar ics`,
@@ -17,11 +19,14 @@ function buildQueries(city: string): string[] {
     `${city} eventbrite organizer`,
     `${city} library events calendar`,
     `${city} parks and recreation calendar`,
+    `${city} live music venue calendar`,
+    `${city} concert venue schedule`,
+    `${city} bar live music eventbrite.com/o`,
   ];
 }
 
 const FETCH_TIMEOUT_MS = 8000;
-const MAX_CANDIDATES_TO_VALIDATE = 15;
+const MAX_CANDIDATES_TO_VALIDATE = 25;
 
 async function fetchWithTimeout(url: string): Promise<Response> {
   return fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
@@ -138,7 +143,15 @@ export async function discoverLocalFeeds(city: string): Promise<DiscoveryCandida
   }
   console.log(`Discovery for "${city}": ${candidates.length} unique candidate URL(s) from Tavily`);
 
-  const toCheck = candidates.slice(0, MAX_CANDIDATES_TO_VALIDATE);
+  // Eventbrite organizer pages (/o/venue-name) export ICS; Eventbrite's own
+  // city-browse pages (/d/state--city) never do - check the former first so
+  // truncation below doesn't crowd them out with browse pages.
+  const isOrganizerPage = (url: string) => url.includes("eventbrite.com/o/");
+  const prioritized = [...candidates].sort(
+    (a, b) => Number(isOrganizerPage(b.url)) - Number(isOrganizerPage(a.url))
+  );
+
+  const toCheck = prioritized.slice(0, MAX_CANDIDATES_TO_VALIDATE);
 
   const validated = await Promise.allSettled(
     toCheck.map(async (candidate) => {
