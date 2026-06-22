@@ -14,10 +14,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Fixed, source-agnostic taxonomy (kept in sync with src/lib/categories.ts)
+// used to group search results into sections regardless of which source an
+// event came from.
+enum EventCategory {
+  MUSIC
+  SPORTS
+  COMEDY
+  ARTS_THEATER
+  FILM
+  FOOD_DRINK
+  COMMUNITY
+  FAMILY
+  OTHER
+}
+
 // Raw + normalized event data pulled from a source adapter (Ticketmaster, Eventbrite, Meetup, ...).
 // sourceName + sourceEventId uniquely identifies an event within its origin API, used to dedupe on refresh.
 model Event {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   sourceName    String
   sourceEventId String
   title         String
@@ -28,9 +43,10 @@ model Event {
   venueName     String?
   city          String?
   genre         String?
+  category      EventCategory @default(OTHER)
   imageUrl      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   savedEvent SavedEvent?
 
@@ -38,6 +54,7 @@ model Event {
   @@index([startTime])
   @@index([genre])
   @@index([city])
+  @@index([category])
 }
 
 // An event the (single) user of this instance has chosen to add to their calendar.

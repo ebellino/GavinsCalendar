@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { categorize } from "@/lib/categories";
 import type { EventSearchQuery, EventSource, NormalizedEvent } from "../types";
 
 // Tier B scraper (see project notes): z2ent.com is a server-rendered Webflow
@@ -45,6 +46,8 @@ export const z2entBoulderTheaterSource: EventSource = {
       const title = card.find("h3.heading-style-h5").first().text().trim();
       if (!title) return;
 
+      const genre = card.find("[fs-list-field='event-type']").first().text().trim() || undefined;
+
       seen.add(detailHref);
       events.push({
         sourceEventId: detailHref,
@@ -54,11 +57,17 @@ export const z2entBoulderTheaterSource: EventSource = {
         startTime,
         venueName: VENUE_NAME,
         city: CITY,
-        genre: card.find("[fs-list-field='event-type']").first().text().trim() || undefined,
+        genre,
+        category: categorize(genre),
         imageUrl: card.find(".events_image").attr("src"),
       });
     });
 
-    return events;
+    // The page has no date-range query param - filter post-scrape instead.
+    return events.filter((event) => {
+      if (query.startDate && event.startTime < query.startDate) return false;
+      if (query.endDate && event.startTime > query.endDate) return false;
+      return true;
+    });
   },
 };

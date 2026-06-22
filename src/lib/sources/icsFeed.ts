@@ -1,5 +1,6 @@
 import * as ical from "node-ical";
 import { db } from "@/lib/db";
+import { categorize } from "@/lib/categories";
 import type { EventSearchQuery, EventSource, NormalizedEvent } from "./types";
 
 // Pulls events from user-approved local calendar feeds (src/lib/discovery) instead
@@ -18,12 +19,19 @@ export const icsFeedSource: EventSource = {
 
     const results = await Promise.allSettled(feeds.map((feed) => fetchFeedEvents(feed)));
 
-    return results.flatMap((result, i) => {
+    const events = results.flatMap((result, i) => {
       if (result.status === "rejected") {
         console.error(`ICS feed "${feeds[i].label}" (${feeds[i].url}) failed:`, result.reason);
         return [];
       }
       return result.value;
+    });
+
+    // The feed itself has no date-range query param - filter post-fetch instead.
+    return events.filter((event) => {
+      if (query.startDate && event.startTime < query.startDate) return false;
+      if (query.endDate && event.startTime > query.endDate) return false;
+      return true;
     });
   },
 };
@@ -55,6 +63,7 @@ async function fetchFeedEvents(feed: { id: string; url: string; city: string }):
       venueName: paramValueToString(component.location),
       city: feed.city,
       genre: component.categories?.[0],
+      category: categorize(component.categories?.[0]),
     });
   }
   return events;
