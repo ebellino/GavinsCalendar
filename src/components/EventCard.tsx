@@ -32,7 +32,8 @@ export function EventCard({
         </p>
         {event.genre && <p className="text-xs text-gray-400">{event.genre}</p>}
       </div>
-      <form action={async () => (isSaved ? unsaveEvent(event.id) : saveEvent(event.id))}>
+      <form action={isSaved ? unsaveEvent : saveEvent}>
+        <input type="hidden" name="eventId" value={event.id} />
         <button
           type="submit"
           className={`rounded px-3 py-2 text-sm ${

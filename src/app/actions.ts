@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 
-export async function saveEvent(eventId: string) {
+export async function saveEvent(formData: FormData) {
+  const eventId = formData.get("eventId") as string;
   await db.savedEvent.upsert({
     where: { eventId },
     create: { eventId },
@@ -12,7 +13,8 @@ export async function saveEvent(eventId: string) {
   revalidatePath("/");
 }
 
-export async function unsaveEvent(eventId: string) {
+export async function unsaveEvent(formData: FormData) {
+  const eventId = formData.get("eventId") as string;
   await db.savedEvent.deleteMany({ where: { eventId } });
   revalidatePath("/");
 }
