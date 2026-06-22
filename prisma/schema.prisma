@@ -45,6 +45,9 @@ model Event {
   genre         String?
   category      EventCategory @default(OTHER)
   imageUrl      String?
+  // IANA name (e.g. "America/Denver") for displaying times in the venue's
+  // own local time rather than the server's; null when a source can't provide it.
+  timezone      String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

@@ -12,7 +12,7 @@ type TicketmasterEvent = {
   dates: { start: { dateTime?: string }; end?: { dateTime?: string } };
   classifications?: { genre?: { name?: string }; segment?: { name?: string } }[];
   images?: { url: string }[];
-  _embedded?: { venues?: { name?: string; city?: { name?: string } }[] };
+  _embedded?: { venues?: { name?: string; city?: { name?: string }; timezone?: string }[] };
 };
 
 type TicketmasterResponse = {
@@ -46,6 +46,7 @@ function normalize(event: TicketmasterEvent): NormalizedEvent {
     genre,
     category: categorize(segment ?? genre),
     imageUrl: event.images?.[0]?.url,
+    timezone: venue?.timezone,
   };
 }
 

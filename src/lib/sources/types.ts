@@ -14,6 +14,10 @@ export type NormalizedEvent = {
   genre?: string;
   category: EventCategoryValue;
   imageUrl?: string;
+  // IANA name (e.g. "America/Denver") for displaying startTime/endTime in the
+  // venue's own local time rather than the server's. Not every source can
+  // provide this - falls back to UTC display when absent.
+  timezone?: string;
 };
 
 export type EventSearchQuery = {

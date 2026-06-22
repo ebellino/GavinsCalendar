@@ -64,6 +64,9 @@ async function fetchFeedEvents(feed: { id: string; url: string; city: string }):
       city: feed.city,
       genre: component.categories?.[0],
       category: categorize(component.categories?.[0]),
+      // node-ical already resolves DTSTART to the correct absolute instant;
+      // .tz is just which IANA zone it used, kept here for display purposes.
+      timezone: component.start.tz,
     });
   }
   return events;

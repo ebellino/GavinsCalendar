@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { categorize } from "@/lib/categories";
+import { zonedTimeToUtc } from "@/lib/timezone";
 import type { EventSearchQuery, EventSource, NormalizedEvent } from "../types";
 
 // Tier B scraper (see project notes): z2ent.com is a server-rendered Webflow
@@ -10,10 +11,29 @@ import type { EventSearchQuery, EventSource, NormalizedEvent } from "../types";
 const PAGE_URL = "https://www.z2ent.com/venues-we-book/boulder-theater";
 const VENUE_NAME = "Boulder Theater";
 const CITY = "Boulder";
+const VENUE_TIMEZONE = "America/Denver";
 
+const MONTHS: Record<string, number> = {
+  Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+  Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+};
+
+// The page lists times like "Jun 25, 2026 8:00 PM" with no timezone - that's
+// always Mountain Time (the venue's), not whatever timezone the server
+// happens to run in. Parsed manually (rather than via `new Date(text)`) so
+// the result doesn't depend on the server's local timezone at all.
 function parseEventDate(dateText: string): Date | null {
-  const date = new Date(dateText);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const match = dateText.match(/^([A-Za-z]{3})[a-z]* (\d{1,2}), (\d{4}) (\d{1,2}):(\d{2}) (AM|PM)$/);
+  if (!match) return null;
+  const [, monthStr, day, year, hourStr, minute, meridiem] = match;
+  const month = MONTHS[monthStr];
+  if (month === undefined) return null;
+
+  let hour = Number(hourStr) % 12;
+  if (meridiem === "PM") hour += 12;
+
+  const naiveUtc = new Date(Date.UTC(Number(year), month, Number(day), hour, Number(minute)));
+  return zonedTimeToUtc(naiveUtc, VENUE_TIMEZONE);
 }
 
 export const z2entBoulderTheaterSource: EventSource = {
@@ -60,6 +80,7 @@ export const z2entBoulderTheaterSource: EventSource = {
         genre,
         category: categorize(genre),
         imageUrl: card.find(".events_image").attr("src"),
+        timezone: VENUE_TIMEZONE,
       });
     });
 

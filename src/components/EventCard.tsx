@@ -1,13 +1,22 @@
 import type { Event, SavedEvent } from "@/generated/prisma/client";
 import { saveEvent, unsaveEvent } from "@/app/actions";
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
+// Formats in the venue's own local time (falling back to UTC when a source
+// couldn't provide one) rather than the server's timezone - otherwise a show
+// actually at 8pm would display as some unrelated hour depending on wherever
+// this is hosted. Includes the zone abbreviation since a trip-planning search
+// can span multiple timezones in one page.
+function formatEventTime(date: Date, timezone: string | null): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone ?? "UTC",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
 
 export function EventCard({
   event,
@@ -26,7 +35,7 @@ export function EventCard({
         <a href={event.url} target="_blank" rel="noreferrer" className="font-semibold hover:underline">
           {event.title}
         </a>
-        <p className="text-sm text-gray-600">{dateFormatter.format(event.startTime)}</p>
+        <p className="text-sm text-gray-600">{formatEventTime(event.startTime, event.timezone)}</p>
         <p className="text-sm text-gray-600">
           {[event.venueName, event.city].filter(Boolean).join(", ")}
         </p>
