@@ -32,17 +32,25 @@ export function EventCard({
         </p>
         {event.genre && <p className="text-xs text-gray-400">{event.genre}</p>}
       </div>
-      <form action={isSaved ? unsaveEvent : saveEvent}>
-        <input type="hidden" name="eventId" value={event.id} />
-        <button
-          type="submit"
-          className={`rounded px-3 py-2 text-sm ${
-            isSaved ? "bg-gray-200 text-gray-900" : "bg-black text-white"
-          }`}
+      <div className="flex flex-col gap-2">
+        <form action={isSaved ? unsaveEvent : saveEvent}>
+          <input type="hidden" name="eventId" value={event.id} />
+          <button
+            type="submit"
+            className={`w-full rounded px-3 py-2 text-sm ${
+              isSaved ? "bg-gray-200 text-gray-900" : "bg-black text-white"
+            }`}
+          >
+            {isSaved ? "Saved ✓" : "Save"}
+          </button>
+        </form>
+        <a
+          href={`/api/events/${event.id}/ics`}
+          className="rounded px-3 py-2 text-sm border text-center text-gray-900 whitespace-nowrap"
         >
-          {isSaved ? "Saved ✓" : "Save"}
-        </button>
-      </form>
+          Add to Calendar
+        </a>
+      </div>
     </div>
   );
 }

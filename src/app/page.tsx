@@ -7,6 +7,7 @@ import { SearchForm } from "@/components/SearchForm";
 import { EventCard } from "@/components/EventCard";
 import { FeedLink } from "@/components/FeedLink";
 import { DiscoverLocalSources } from "@/components/DiscoverLocalSources";
+import { SavedEventsSection } from "@/components/SavedEventsSection";
 import type { Event, SavedEvent } from "@/generated/prisma/client";
 
 type SearchParams = {
@@ -63,6 +64,12 @@ export default async function Home({
     eventsByCategory.set(category, bucket);
   }
 
+  const savedEvents = await db.event.findMany({
+    where: { savedEvent: { isNot: null }, startTime: { gte: new Date() } },
+    include: { savedEvent: true },
+    orderBy: { startTime: "asc" },
+  });
+
   const feedToken = await getOrCreateFeedToken();
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
@@ -72,6 +79,7 @@ export default async function Home({
   return (
     <main className="max-w-3xl mx-auto p-6 flex flex-col gap-6">
       <h1 className="text-2xl font-bold">Event Calendar</h1>
+      <SavedEventsSection savedEvents={savedEvents} />
       <FeedLink feedUrl={feedUrl} />
       <DiscoverLocalSources defaultCity={query.city} />
       <SearchForm defaultValues={query} />

@@ -1,5 +1,6 @@
 import ical from "ical-generator";
 import { db } from "@/lib/db";
+import { addEventToCalendar } from "@/lib/ical";
 
 // A private, per-instance iCal feed. Friends add this URL once via
 // "Subscribe to Calendar" in Google/Apple/Outlook and saved events show up
@@ -19,15 +20,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
 
   const calendar = ical({ name: "Event Calendar" });
   for (const { event } of savedEvents) {
-    calendar.createEvent({
-      id: event.id,
-      start: event.startTime,
-      end: event.endTime ?? new Date(event.startTime.getTime() + 60 * 60 * 1000),
-      summary: event.title,
-      description: event.description ?? undefined,
-      location: [event.venueName, event.city].filter(Boolean).join(", ") || undefined,
-      url: event.url,
-    });
+    addEventToCalendar(calendar, event);
   }
 
   return new Response(calendar.toString(), {
