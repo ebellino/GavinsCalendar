@@ -12,6 +12,11 @@ export function SearchForm({
   cityOptions: string[];
   genreOptions: string[];
 }) {
+  // Client-side UX only - blocks picking a past date in the picker UI, but a
+  // hand-edited URL can bypass this, so the real enforcement is server-side
+  // in page.tsx.
+  const todayString = new Date().toISOString().slice(0, 10);
+
   return (
     <form className="flex flex-wrap gap-2" action="/" method="get">
       <input
@@ -53,6 +58,7 @@ export function SearchForm({
           type="date"
           name="startDate"
           defaultValue={defaultValues.startDate}
+          min={todayString}
           className="border rounded px-2 py-2 bg-white text-gray-900"
         />
       </label>
@@ -62,6 +68,7 @@ export function SearchForm({
           type="date"
           name="endDate"
           defaultValue={defaultValues.endDate}
+          min={defaultValues.startDate || todayString}
           className="border rounded px-2 py-2 bg-white text-gray-900"
         />
       </label>

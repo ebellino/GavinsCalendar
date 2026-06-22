@@ -14,6 +14,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
   }
 
   const savedEvents = await db.savedEvent.findMany({
+    where: { event: { startTime: { gte: new Date() } } },
     include: { event: true },
     orderBy: { event: { startTime: "asc" } },
   });

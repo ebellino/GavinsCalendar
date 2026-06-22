@@ -31,7 +31,18 @@ export default async function Home({
   // Inclusive of the whole end day, since the input only carries a date, not a time.
   if (endDate) endDate.setUTCHours(23, 59, 59, 999);
 
-  if (hasQuery) {
+  const now = new Date();
+  const today = new Date(now);
+  today.setUTCHours(0, 0, 0, 0);
+
+  // A range entirely in the past, or reversed (end before start), can never
+  // match anything - catch it explicitly rather than silently wasting API
+  // calls on a request guaranteed to return nothing. The date inputs also
+  // have a `min` of today, but that's client-side only and a URL can be
+  // hand-edited around it, so this check is the real enforcement.
+  const invalidRange = Boolean((endDate && endDate < today) || (startDate && endDate && startDate > endDate));
+
+  if (hasQuery && !invalidRange) {
     // Best-effort refresh: if a source API is down, fall back to whatever's already cached.
     try {
       await searchAndCacheEvents({ ...query, startDate, endDate });
@@ -40,21 +51,22 @@ export default async function Home({
     }
   }
 
-  const now = new Date();
   // Never show past events, even if an explicit startDate is in the past.
   const effectiveStartDate = startDate && startDate > now ? startDate : now;
 
-  const events = await db.event.findMany({
-    where: {
-      title: query.keyword ? { contains: query.keyword, mode: "insensitive" } : undefined,
-      genre: query.genre ? { contains: query.genre, mode: "insensitive" } : undefined,
-      city: query.city ? { contains: query.city, mode: "insensitive" } : undefined,
-      startTime: { gte: effectiveStartDate, lte: endDate },
-    },
-    include: { savedEvent: true },
-    orderBy: { startTime: "asc" },
-    take: 200,
-  });
+  const events = invalidRange
+    ? []
+    : await db.event.findMany({
+        where: {
+          title: query.keyword ? { contains: query.keyword, mode: "insensitive" } : undefined,
+          genre: query.genre ? { contains: query.genre, mode: "insensitive" } : undefined,
+          city: query.city ? { contains: query.city, mode: "insensitive" } : undefined,
+          startTime: { gte: effectiveStartDate, lte: endDate },
+        },
+        include: { savedEvent: true },
+        orderBy: { startTime: "asc" },
+        take: 200,
+      });
 
   const eventsByCategory = new Map<EventCategoryValue, (Event & { savedEvent: SavedEvent | null })[]>();
   for (const event of events) {
@@ -108,7 +120,12 @@ export default async function Home({
         genreOptions={genreOptions.map((e) => e.genre!)}
       />
       <div className="flex flex-col gap-6">
-        {events.length === 0 && (
+        {invalidRange && (
+          <p className="text-red-700 text-sm">
+            That date range isn&apos;t valid — the end date must be today or later, and on or after the start date.
+          </p>
+        )}
+        {!invalidRange && events.length === 0 && (
           <p className="text-gray-500">
             {hasQuery ? "No events found." : "Search above to find events."}
           </p>
