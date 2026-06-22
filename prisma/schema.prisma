@@ -87,3 +87,20 @@ model LocalFeedSource {
 
   @@index([city])
 }
+
+// Tracks, per source and per (city+genre+keyword) combination, the single
+// contiguous date range already known to be fresh - so a search whose date
+// range falls fully within it can skip re-hitting that source's API
+// entirely, and one that partially overlaps only needs to fetch the union
+// (not the whole requested range from scratch). Only used for explicit
+// date-range searches; open-ended searches aren't tracked here.
+model SearchCacheRange {
+  id              String   @id @default(cuid())
+  sourceName      String
+  filterKey       String
+  cachedStart     DateTime
+  cachedEnd       DateTime
+  lastRefreshedAt DateTime @default(now())
+
+  @@unique([sourceName, filterKey])
+}

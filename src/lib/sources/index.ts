@@ -3,6 +3,7 @@ import { ticketmasterSource } from "./ticketmaster";
 import { seatgeekSource } from "./seatgeek";
 import { icsFeedSource } from "./icsFeed";
 import { z2entBoulderTheaterSource } from "./scrapers/z2entBoulderTheater";
+import { buildFilterKey, recordCacheRefresh, resolveCachePlan } from "@/lib/searchCache";
 import type { EventSearchQuery, EventSource } from "./types";
 
 // Add new adapters here as they're built. Eventbrite/Meetup are intentionally
@@ -19,9 +20,35 @@ export const eventSources: EventSource[] = [
 
 // Queries every registered source in parallel, normalizes results, and upserts
 // them into the Event table so the search UI always reads from the DB cache.
+//
+// For explicit date-range searches, each source first checks whether its
+// cached range already covers the request (src/lib/searchCache.ts) - fully
+// covered and fresh means that source is skipped entirely this round, since
+// the Event table already has what's needed. Open-ended searches (no date
+// range given) bypass this and always refetch, same as before caching existed.
 export async function searchAndCacheEvents(query: EventSearchQuery) {
+  const useRangeCache = Boolean(query.startDate && query.endDate);
+  const filterKey = useRangeCache ? buildFilterKey(query) : null;
+
   const results = await Promise.allSettled(
-    eventSources.map((source) => source.search(query))
+    eventSources.map(async (source) => {
+      if (!useRangeCache || !filterKey) {
+        return source.search(query);
+      }
+
+      const plan = await resolveCachePlan(source.name, filterKey, query.startDate!, query.endDate!);
+      if (plan.action === "skip") {
+        console.log(`[cache] ${source.name} "${filterKey}": skipped, already covered`);
+        return [];
+      }
+
+      console.log(
+        `[cache] ${source.name} "${filterKey}": fetching ${plan.fetchStart.toISOString()} - ${plan.fetchEnd.toISOString()}`
+      );
+      const events = await source.search({ ...query, startDate: plan.fetchStart, endDate: plan.fetchEnd });
+      await recordCacheRefresh(source.name, filterKey, plan.fetchStart, plan.fetchEnd);
+      return events;
+    })
   );
 
   const events = results.flatMap((result, i) => {
