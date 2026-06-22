@@ -70,6 +70,26 @@ export default async function Home({
     orderBy: { startTime: "asc" },
   });
 
+  // Autofill suggestions drawn from whatever's actually been cached, not a
+  // fixed list - reflects the real, growing universe of values as more
+  // sources/cities get used.
+  const [cityOptions, genreOptions] = await Promise.all([
+    db.event.findMany({
+      where: { city: { not: null } },
+      distinct: ["city"],
+      select: { city: true },
+      orderBy: { city: "asc" },
+      take: 50,
+    }),
+    db.event.findMany({
+      where: { genre: { not: null } },
+      distinct: ["genre"],
+      select: { genre: true },
+      orderBy: { genre: "asc" },
+      take: 50,
+    }),
+  ]);
+
   const feedToken = await getOrCreateFeedToken();
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
@@ -82,7 +102,11 @@ export default async function Home({
       <SavedEventsSection savedEvents={savedEvents} />
       <FeedLink feedUrl={feedUrl} />
       <DiscoverLocalSources defaultCity={query.city} />
-      <SearchForm defaultValues={query} />
+      <SearchForm
+        defaultValues={query}
+        cityOptions={cityOptions.map((e) => e.city!)}
+        genreOptions={genreOptions.map((e) => e.genre!)}
+      />
       <div className="flex flex-col gap-6">
         {events.length === 0 && (
           <p className="text-gray-500">

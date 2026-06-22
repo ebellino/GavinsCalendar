@@ -2,10 +2,15 @@ import Link from "next/link";
 
 // Plain GET form: the search state lives in the URL, so results are
 // bookmarkable/shareable and the page works even before any client JS loads.
+// <datalist> gives native, no-JS autofill suggestions on the text inputs.
 export function SearchForm({
   defaultValues,
+  cityOptions,
+  genreOptions,
 }: {
   defaultValues: { keyword?: string; genre?: string; city?: string; startDate?: string; endDate?: string };
+  cityOptions: string[];
+  genreOptions: string[];
 }) {
   return (
     <form className="flex flex-wrap gap-2" action="/" method="get">
@@ -21,15 +26,27 @@ export function SearchForm({
         name="genre"
         placeholder="Genre..."
         defaultValue={defaultValues.genre}
+        list="genre-options"
         className="border rounded px-3 py-2 flex-1 min-w-32 bg-white text-gray-900"
       />
+      <datalist id="genre-options">
+        {genreOptions.map((genre) => (
+          <option key={genre} value={genre} />
+        ))}
+      </datalist>
       <input
         type="text"
         name="city"
         placeholder="City..."
         defaultValue={defaultValues.city}
+        list="city-options"
         className="border rounded px-3 py-2 flex-1 min-w-32 bg-white text-gray-900"
       />
+      <datalist id="city-options">
+        {cityOptions.map((city) => (
+          <option key={city} value={city} />
+        ))}
+      </datalist>
       <label className="flex items-center gap-1 text-sm text-gray-600">
         From
         <input
