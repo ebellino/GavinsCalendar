@@ -3,6 +3,7 @@ import Link from "next/link";
 // Plain GET form: the search state lives in the URL, so results are
 // bookmarkable/shareable and the page works even before any client JS loads.
 // <datalist> gives native, no-JS autofill suggestions on the text inputs.
+// Vertical layout - this lives in a narrow sidebar, not a wide top bar.
 export function SearchForm({
   defaultValues,
   cityOptions,
@@ -18,13 +19,14 @@ export function SearchForm({
   const todayString = new Date().toISOString().slice(0, 10);
 
   return (
-    <form className="flex flex-wrap gap-2" action="/" method="get">
+    <form className="border rounded-lg p-4 flex flex-col gap-2" action="/" method="get">
+      <p className="font-semibold mb-1">Search</p>
       <input
         type="text"
         name="keyword"
         placeholder="Event name..."
         defaultValue={defaultValues.keyword}
-        className="border rounded px-3 py-2 flex-1 min-w-40 bg-white text-gray-900"
+        className="border rounded px-3 py-2 w-full bg-white text-gray-900"
       />
       <input
         type="text"
@@ -32,7 +34,7 @@ export function SearchForm({
         placeholder="Genre..."
         defaultValue={defaultValues.genre}
         list="genre-options"
-        className="border rounded px-3 py-2 flex-1 min-w-32 bg-white text-gray-900"
+        className="border rounded px-3 py-2 w-full bg-white text-gray-900"
       />
       <datalist id="genre-options">
         {genreOptions.map((genre) => (
@@ -45,14 +47,14 @@ export function SearchForm({
         placeholder="City..."
         defaultValue={defaultValues.city}
         list="city-options"
-        className="border rounded px-3 py-2 flex-1 min-w-32 bg-white text-gray-900"
+        className="border rounded px-3 py-2 w-full bg-white text-gray-900"
       />
       <datalist id="city-options">
         {cityOptions.map((city) => (
           <option key={city} value={city} />
         ))}
       </datalist>
-      <label className="flex items-center gap-1 text-sm text-gray-600">
+      <label className="flex items-center justify-between gap-2 text-sm text-gray-600">
         From
         <input
           type="date"
@@ -62,7 +64,7 @@ export function SearchForm({
           className="border rounded px-2 py-2 bg-white text-gray-900"
         />
       </label>
-      <label className="flex items-center gap-1 text-sm text-gray-600">
+      <label className="flex items-center justify-between gap-2 text-sm text-gray-600">
         To
         <input
           type="date"
@@ -72,10 +74,10 @@ export function SearchForm({
           className="border rounded px-2 py-2 bg-white text-gray-900"
         />
       </label>
-      <button type="submit" className="bg-black text-white rounded px-4 py-2">
+      <button type="submit" className="bg-black text-white rounded px-4 py-2 w-full mt-1">
         Search
       </button>
-      <Link href="/" className="text-sm text-gray-600 underline self-center">
+      <Link href="/" className="text-sm text-gray-600 underline text-center">
         Clear filters
       </Link>
     </form>

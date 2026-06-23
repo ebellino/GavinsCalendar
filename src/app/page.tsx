@@ -9,6 +9,7 @@ import { EventCard } from "@/components/EventCard";
 import { FeedLink } from "@/components/FeedLink";
 import { DiscoverLocalSources } from "@/components/DiscoverLocalSources";
 import { SavedEventsSection } from "@/components/SavedEventsSection";
+import { ScrollRow } from "@/components/ScrollRow";
 import type { Event, SavedEvent } from "@/generated/prisma/client";
 
 type SearchParams = {
@@ -141,17 +142,13 @@ export default async function Home({
   const feedUrl = `${protocol}://${host}/feed/${feedToken}`;
 
   return (
-    <main className="max-w-3xl mx-auto p-6 flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Event Calendar</h1>
-      <SavedEventsSection savedEvents={savedEvents} />
-      <FeedLink feedUrl={feedUrl} />
-      <DiscoverLocalSources defaultCity={query.city} />
-      <SearchForm
-        defaultValues={query}
-        cityOptions={cityOptions.map((e) => e.city!)}
-        genreOptions={[...EVENT_CATEGORIES.map((cat) => CATEGORY_LABELS[cat]), ...genreOptions.map((e) => e.genre!)]}
-      />
-      <div className="flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-[280px_1fr_300px] gap-6 items-start">
+      <aside className="flex flex-col gap-4 order-2 lg:order-1">
+        <SavedEventsSection savedEvents={savedEvents} />
+      </aside>
+
+      <main className="flex flex-col gap-6 order-1 lg:order-2">
+        <h1 className="text-2xl font-bold">Event Calendar</h1>
         {invalidRange && (
           <p className="text-red-700 text-sm">
             That date range isn&apos;t valid — the end date must be today or later, and on or after the start date.
@@ -170,17 +167,27 @@ export default async function Home({
               <h2 className="text-lg font-semibold">
                 {CATEGORY_LABELS[category]} ({categoryEvents.length})
               </h2>
-              <div className="flex gap-3 overflow-x-auto pb-2">
+              <ScrollRow>
                 {categoryEvents.map((event) => (
                   <div key={event.id} className="shrink-0 w-80">
                     <EventCard event={event} />
                   </div>
                 ))}
-              </div>
+              </ScrollRow>
             </section>
           );
         })}
-      </div>
-    </main>
+      </main>
+
+      <aside className="flex flex-col gap-4 order-3">
+        <SearchForm
+          defaultValues={query}
+          cityOptions={cityOptions.map((e) => e.city!)}
+          genreOptions={[...EVENT_CATEGORIES.map((cat) => CATEGORY_LABELS[cat]), ...genreOptions.map((e) => e.genre!)]}
+        />
+        <DiscoverLocalSources defaultCity={query.city} />
+        <FeedLink feedUrl={feedUrl} />
+      </aside>
+    </div>
   );
 }
