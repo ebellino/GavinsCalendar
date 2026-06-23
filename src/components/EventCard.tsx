@@ -18,6 +18,9 @@ function formatEventTime(date: Date, timezone: string | null): string {
   }).format(date);
 }
 
+// Stacked layout (image on top) rather than side-by-side, so this works at a
+// fixed narrow width in the category scroll-rows on the search page, not
+// just as a full-width row in the saved-events list.
 export function EventCard({
   event,
 }: {
@@ -26,12 +29,12 @@ export function EventCard({
   const isSaved = event.savedEvent !== null;
 
   return (
-    <div className="border rounded-lg p-4 flex gap-4">
+    <div className="border rounded-lg p-3 flex flex-col gap-2 w-full">
       {event.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- external, unoptimized source images
-        <img src={event.imageUrl} alt="" className="w-24 h-24 object-cover rounded" />
+        <img src={event.imageUrl} alt="" className="w-full h-32 object-cover rounded" />
       )}
-      <div className="flex-1">
+      <div>
         <a href={event.url} target="_blank" rel="noreferrer" className="font-semibold hover:underline">
           {event.title}
         </a>
@@ -41,8 +44,8 @@ export function EventCard({
         </p>
         {event.genre && <p className="text-xs text-gray-400">{event.genre}</p>}
       </div>
-      <div className="flex flex-col gap-2">
-        <form action={isSaved ? unsaveEvent : saveEvent}>
+      <div className="flex gap-2 mt-auto">
+        <form action={isSaved ? unsaveEvent : saveEvent} className="flex-1">
           <input type="hidden" name="eventId" value={event.id} />
           <button
             type="submit"
@@ -55,7 +58,7 @@ export function EventCard({
         </form>
         <a
           href={`/api/events/${event.id}/ics`}
-          className="rounded px-3 py-2 text-sm border text-center text-gray-900 whitespace-nowrap"
+          className="flex-1 rounded px-3 py-2 text-sm bg-gray-200 text-gray-900 text-center whitespace-nowrap"
         >
           Add to Calendar
         </a>

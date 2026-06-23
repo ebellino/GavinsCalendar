@@ -1,3 +1,15 @@
+// "YYYY-MM-DD" for `date` as it reads on a calendar in `timeZone` - used to
+// compare a UTC instant against a plain date-range search (e.g. a search for
+// "Aug 1" means the venue's calendar showed Aug 1, not UTC's).
+export function localDateString(date: Date, timeZone: string | null): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timeZone ?? "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 // Converts a wall-clock time in a specific IANA timezone to the correct UTC
 // instant, without relying on the server's own timezone (the server runs in
 // UTC in Docker, but event listings give times local to the venue).

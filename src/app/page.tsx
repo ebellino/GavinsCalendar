@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { searchAndCacheEvents } from "@/lib/sources";
 import { getOrCreateFeedToken } from "@/lib/instance";
-import { CATEGORY_DISPLAY_ORDER, CATEGORY_LABELS, type EventCategoryValue } from "@/lib/categories";
+import { CATEGORY_DISPLAY_ORDER, CATEGORY_LABELS, EVENT_CATEGORIES, type EventCategoryValue } from "@/lib/categories";
+import { localDateString } from "@/lib/timezone";
 import { SearchForm } from "@/components/SearchForm";
 import { EventCard } from "@/components/EventCard";
 import { FeedLink } from "@/components/FeedLink";
@@ -42,31 +43,62 @@ export default async function Home({
   // hand-edited around it, so this check is the real enforcement.
   const invalidRange = Boolean((endDate && endDate < today) || (startDate && endDate && startDate > endDate));
 
+  // A search for "Aug 1" means the venue's own calendar showed Aug 1, not
+  // UTC's - and since UTC midnight on Aug 1 is still evening of July 31 in
+  // every US timezone, a strict UTC boundary would wrongly let late-July-31
+  // events in (or, for timezones ahead of UTC, wrongly exclude real Aug 1
+  // events). Fetch a widened window to be safe, then trim to the exact
+  // requested calendar dates afterward using each event's own timezone.
+  const TIMEZONE_SLOP_MS = 24 * 60 * 60 * 1000;
+  const fetchStartDate = startDate ? new Date(startDate.getTime() - TIMEZONE_SLOP_MS) : undefined;
+  const fetchEndDate = endDate ? new Date(endDate.getTime() + TIMEZONE_SLOP_MS) : undefined;
+
   if (hasQuery && !invalidRange) {
     // Best-effort refresh: if a source API is down, fall back to whatever's already cached.
     try {
-      await searchAndCacheEvents({ ...query, startDate, endDate });
+      await searchAndCacheEvents({ ...query, startDate: fetchStartDate, endDate: fetchEndDate });
     } catch (error) {
       console.error("Event source refresh failed:", error);
     }
   }
 
   // Never show past events, even if an explicit startDate is in the past.
-  const effectiveStartDate = startDate && startDate > now ? startDate : now;
+  const effectiveStartDate = fetchStartDate && fetchStartDate > now ? fetchStartDate : now;
+
+  // A genre search matching one of our broad category labels ("Music")
+  // filters by the normalized category instead of the granular genre text -
+  // otherwise "Music" matches nothing, since no source's raw genre string
+  // literally contains the word "music" (it'd be "Jazz", "Rock", etc).
+  const matchedCategory = query.genre
+    ? EVENT_CATEGORIES.find((cat) => CATEGORY_LABELS[cat].toLowerCase() === query.genre!.trim().toLowerCase())
+    : undefined;
 
   const events = invalidRange
     ? []
     : await db.event.findMany({
         where: {
           title: query.keyword ? { contains: query.keyword, mode: "insensitive" } : undefined,
-          genre: query.genre ? { contains: query.genre, mode: "insensitive" } : undefined,
+          ...(matchedCategory
+            ? { category: matchedCategory }
+            : query.genre
+              ? { genre: { contains: query.genre, mode: "insensitive" } }
+              : {}),
           city: query.city ? { contains: query.city, mode: "insensitive" } : undefined,
-          startTime: { gte: effectiveStartDate, lte: endDate },
+          startTime: { gte: effectiveStartDate, lte: fetchEndDate },
         },
         include: { savedEvent: true },
         orderBy: { startTime: "asc" },
-        take: 200,
-      });
+        take: 300,
+      }).then((rows) =>
+        // Trim the widened fetch back down to exactly the requested calendar
+        // dates, per event, in the event's own timezone.
+        rows.filter((event) => {
+          const localDate = localDateString(event.startTime, event.timezone);
+          if (query.startDate && localDate < query.startDate) return false;
+          if (query.endDate && localDate > query.endDate) return false;
+          return true;
+        })
+      );
 
   const eventsByCategory = new Map<EventCategoryValue, (Event & { savedEvent: SavedEvent | null })[]>();
   for (const event of events) {
@@ -117,7 +149,7 @@ export default async function Home({
       <SearchForm
         defaultValues={query}
         cityOptions={cityOptions.map((e) => e.city!)}
-        genreOptions={genreOptions.map((e) => e.genre!)}
+        genreOptions={[...EVENT_CATEGORIES.map((cat) => CATEGORY_LABELS[cat]), ...genreOptions.map((e) => e.genre!)]}
       />
       <div className="flex flex-col gap-6">
         {invalidRange && (
@@ -135,10 +167,16 @@ export default async function Home({
           if (!categoryEvents || categoryEvents.length === 0) return null;
           return (
             <section key={category} className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold">{CATEGORY_LABELS[category]}</h2>
-              {categoryEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
+              <h2 className="text-lg font-semibold">
+                {CATEGORY_LABELS[category]} ({categoryEvents.length})
+              </h2>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {categoryEvents.map((event) => (
+                  <div key={event.id} className="shrink-0 w-80">
+                    <EventCard event={event} />
+                  </div>
+                ))}
+              </div>
             </section>
           );
         })}
