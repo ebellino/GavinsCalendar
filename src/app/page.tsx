@@ -147,8 +147,13 @@ export default async function Home({
         <SavedEventsSection savedEvents={savedEvents} />
       </aside>
 
-      <main className="flex flex-col gap-6 order-1 lg:order-2">
+      <main className="flex flex-col gap-6 order-1 lg:order-2 min-w-0">
         <h1 className="text-2xl font-bold">Event Calendar</h1>
+        <SearchForm
+          defaultValues={query}
+          cityOptions={cityOptions.map((e) => e.city!)}
+          genreOptions={[...EVENT_CATEGORIES.map((cat) => CATEGORY_LABELS[cat]), ...genreOptions.map((e) => e.genre!)]}
+        />
         {invalidRange && (
           <p className="text-red-700 text-sm">
             That date range isn&apos;t valid — the end date must be today or later, and on or after the start date.
@@ -163,7 +168,7 @@ export default async function Home({
           const categoryEvents = eventsByCategory.get(category);
           if (!categoryEvents || categoryEvents.length === 0) return null;
           return (
-            <section key={category} className="flex flex-col gap-3">
+            <section key={category} className="flex flex-col gap-3 min-w-0">
               <h2 className="text-lg font-semibold">
                 {CATEGORY_LABELS[category]} ({categoryEvents.length})
               </h2>
@@ -180,11 +185,6 @@ export default async function Home({
       </main>
 
       <aside className="flex flex-col gap-4 order-3">
-        <SearchForm
-          defaultValues={query}
-          cityOptions={cityOptions.map((e) => e.city!)}
-          genreOptions={[...EVENT_CATEGORIES.map((cat) => CATEGORY_LABELS[cat]), ...genreOptions.map((e) => e.genre!)]}
-        />
         <DiscoverLocalSources defaultCity={query.city} />
         <FeedLink feedUrl={feedUrl} />
       </aside>

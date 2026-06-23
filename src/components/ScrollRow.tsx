@@ -19,7 +19,7 @@ export function ScrollRow({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div ref={ref} onWheel={handleWheel} className="flex gap-3 overflow-x-auto pb-2">
+    <div ref={ref} onWheel={handleWheel} className="flex gap-3 overflow-x-auto pb-2 min-w-0">
       {children}
     </div>
   );
