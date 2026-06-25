@@ -30,11 +30,24 @@ function extractLdJsonEvents(html: string): LdJsonEvent[] {
       const parsed: unknown = JSON.parse(match[1]);
       const items = Array.isArray(parsed) ? parsed : [parsed];
       for (const item of items) {
-        if (isEventItem(item)) events.push(item);
-        const graph = (item as Record<string, unknown>)?.["@graph"];
+        if (isEventItem(item)) {
+          events.push(item);
+          continue;
+        }
+        const obj = item as Record<string, unknown>;
+        // @graph: standard JSON-LD container for multiple typed nodes
+        const graph = obj["@graph"];
         if (Array.isArray(graph)) {
-          for (const g of graph) {
-            if (isEventItem(g)) events.push(g);
+          for (const g of graph) { if (isEventItem(g)) events.push(g); }
+        }
+        // ItemList.itemListElement: used by Eventbrite and similar
+        const listEl = obj["itemListElement"];
+        if (Array.isArray(listEl)) {
+          for (const el of listEl) {
+            if (isEventItem(el)) events.push(el);
+            // ListItem wrapping: { "@type": "ListItem", "item": { "@type": "Event", ... } }
+            const inner = (el as Record<string, unknown>)?.["item"];
+            if (inner && isEventItem(inner)) events.push(inner);
           }
         }
       }

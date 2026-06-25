@@ -57,7 +57,7 @@ async function fetchFeedEvents(feed: { id: string; url: string; city: string }):
       sourceEventId: `${feed.id}:${component.uid ?? key}`,
       title: paramValueToString(component.summary) ?? "Untitled event",
       description: paramValueToString(component.description),
-      url: component.url ?? feed.url,
+      url: paramValueToString(component.url) ?? feed.url,
       startTime: new Date(component.start),
       endTime: component.end ? new Date(component.end) : undefined,
       venueName: paramValueToString(component.location),
