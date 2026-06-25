@@ -8,6 +8,7 @@ import { SearchForm } from "@/components/SearchForm";
 import { EventCard } from "@/components/EventCard";
 import { FeedLink } from "@/components/FeedLink";
 import { DiscoverLocalSources } from "@/components/DiscoverLocalSources";
+import { TrackVenueWebsites } from "@/components/TrackVenueWebsites";
 import { SavedEventsSection } from "@/components/SavedEventsSection";
 import { ScrollRow } from "@/components/ScrollRow";
 import type { Event, SavedEvent } from "@/generated/prisma/client";
@@ -135,6 +136,11 @@ export default async function Home({
     }),
   ]);
 
+  const [feedSources, venueSources] = await Promise.all([
+    db.localFeedSource.findMany({ orderBy: { addedAt: "asc" } }),
+    db.venueSource.findMany({ orderBy: { addedAt: "asc" } }),
+  ]);
+
   const feedToken = await getOrCreateFeedToken();
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
@@ -185,7 +191,8 @@ export default async function Home({
       </main>
 
       <aside className="flex flex-col gap-4 order-3">
-        <DiscoverLocalSources defaultCity={query.city} />
+        <DiscoverLocalSources defaultCity={query.city} initialFeeds={feedSources} />
+        <TrackVenueWebsites initialSources={venueSources} />
         <FeedLink feedUrl={feedUrl} />
       </aside>
     </div>

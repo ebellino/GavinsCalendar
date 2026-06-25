@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { approveLocalFeed, discoverFeedsForCity } from "@/app/actions";
+import { approveLocalFeed, discoverFeedsForCity, removeLocalFeed } from "@/app/actions";
 import type { DiscoveryCandidate } from "@/lib/discovery";
 
-export function DiscoverLocalSources({ defaultCity }: { defaultCity?: string }) {
+type FeedSource = { id: string; city: string; label: string };
+
+export function DiscoverLocalSources({
+  defaultCity,
+  initialFeeds,
+}: {
+  defaultCity?: string;
+  initialFeeds: FeedSource[];
+}) {
   const [city, setCity] = useState(defaultCity ?? "");
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const [candidates, setCandidates] = useState<DiscoveryCandidate[]>([]);
@@ -85,6 +93,30 @@ export function DiscoverLocalSources({ defaultCity }: { defaultCity?: string }) 
             </li>
           ))}
         </ul>
+      )}
+
+      {initialFeeds.length > 0 && (
+        <div className="flex flex-col gap-1 pt-1 border-t border-gray-200">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tracked calendars</p>
+          <ul className="flex flex-col gap-1">
+            {initialFeeds.map((feed) => (
+              <li key={feed.id} className="flex items-center justify-between gap-2 text-sm">
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium truncate block">{feed.label}</span>
+                  <span className="text-xs text-gray-500">{feed.city}</span>
+                </div>
+                <form action={removeLocalFeed.bind(null, feed.id)}>
+                  <button
+                    type="submit"
+                    className="text-gray-400 hover:text-red-600 text-xs shrink-0"
+                  >
+                    Remove
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

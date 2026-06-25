@@ -1,25 +1,27 @@
 "use client";
 
-import { useRef, type WheelEvent } from "react";
+import { useEffect, useRef } from "react";
 
-// A plain overflow-x-auto row only scrolls sideways via its scrollbar or a
-// trackpad swipe - a mouse wheel does nothing. This remaps vertical wheel
-// motion to horizontal scroll while hovering, but only when the gesture is
-// mostly vertical, so an actual trackpad horizontal swipe still passes
-// through untouched instead of being double-handled.
+// Remaps vertical wheel motion to horizontal scroll while hovering.
+// Uses a native listener with { passive: false } so preventDefault() actually
+// fires — React's synthetic onWheel is passive and can't stop page scroll.
 export function ScrollRow({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  function handleWheel(e: WheelEvent<HTMLDivElement>) {
-    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    el.scrollLeft += e.deltaY;
-    e.preventDefault();
-  }
+    const handler = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      el.scrollLeft += e.deltaY;
+      e.preventDefault();
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []);
 
   return (
-    <div ref={ref} onWheel={handleWheel} className="flex gap-3 overflow-x-auto pb-2 min-w-0">
+    <div ref={ref} className="flex gap-3 overflow-x-auto pb-2 min-w-0">
       {children}
     </div>
   );

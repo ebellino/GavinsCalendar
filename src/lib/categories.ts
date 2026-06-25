@@ -12,6 +12,7 @@ export const EVENT_CATEGORIES = [
   "FOOD_DRINK",
   "COMMUNITY",
   "FAMILY",
+  "LOCAL_VENUE",
   "OTHER",
 ] as const;
 
@@ -26,6 +27,7 @@ export const CATEGORY_LABELS: Record<EventCategoryValue, string> = {
   FOOD_DRINK: "Food & Drink",
   COMMUNITY: "Community",
   FAMILY: "Family",
+  LOCAL_VENUE: "Local Venues",
   OTHER: "Other",
 };
 
@@ -40,6 +42,7 @@ export const CATEGORY_DISPLAY_ORDER: EventCategoryValue[] = [
   "FOOD_DRINK",
   "FAMILY",
   "COMMUNITY",
+  "LOCAL_VENUE",
   "OTHER",
 ];
 

@@ -3,6 +3,7 @@ import { ticketmasterSource } from "./ticketmaster";
 import { seatgeekSource } from "./seatgeek";
 import { icsFeedSource } from "./icsFeed";
 import { z2entBoulderTheaterSource } from "./scrapers/z2entBoulderTheater";
+import { venueScraperSource } from "./venueScraperSource";
 import { buildFilterKey, recordCacheRefresh, resolveCachePlan } from "@/lib/searchCache";
 import type { EventSearchQuery, EventSource } from "./types";
 
@@ -16,6 +17,7 @@ export const eventSources: EventSource[] = [
   seatgeekSource,
   icsFeedSource,
   z2entBoulderTheaterSource,
+  venueScraperSource,
 ];
 
 // Queries every registered source in parallel, normalizes results, and upserts

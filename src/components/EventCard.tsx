@@ -18,6 +18,16 @@ function formatEventTime(date: Date, timezone: string | null): string {
   }).format(date);
 }
 
+const SOURCE_LABELS: Record<string, string> = {
+  ticketmaster: "Ticketmaster",
+  seatgeek: "SeatGeek",
+  "ics-feed": "Local Calendar",
+};
+
+function sourceLabel(sourceName: string): string {
+  return SOURCE_LABELS[sourceName] ?? "Local Venue";
+}
+
 // Stacked layout (image on top) rather than side-by-side, so this works at a
 // fixed narrow width in the category scroll-rows on the search page, not
 // just as a full-width row in the saved-events list.
@@ -42,7 +52,9 @@ export function EventCard({
         <p className="text-sm text-gray-600">
           {[event.venueName, event.city].filter(Boolean).join(", ")}
         </p>
-        {event.genre && <p className="text-xs text-gray-400">{event.genre}</p>}
+        <p className="text-xs text-gray-400">
+          {[event.genre, sourceLabel(event.sourceName)].filter(Boolean).join(" · ")}
+        </p>
       </div>
       <div className="flex gap-2 mt-auto">
         <form action={isSaved ? unsaveEvent : saveEvent} className="flex-1">

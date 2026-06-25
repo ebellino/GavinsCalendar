@@ -26,6 +26,7 @@ enum EventCategory {
   FOOD_DRINK
   COMMUNITY
   FAMILY
+  LOCAL_VENUE
   OTHER
 }
 
@@ -86,6 +87,18 @@ model LocalFeedSource {
   addedAt   DateTime @default(now())
 
   @@index([city])
+}
+
+// A venue website the user has added for event tracking. The page is fetched
+// and checked for LD+JSON schema.org Event objects on each search refresh.
+// readable=false means no parseable events were found when it was added — the
+// URL is still stored so it appears in the list as a quick link.
+model VenueSource {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  label     String
+  readable  Boolean  @default(false)
+  addedAt   DateTime @default(now())
 }
 
 // Tracks, per source and per (city+genre+keyword) combination, the single
