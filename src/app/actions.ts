@@ -35,7 +35,7 @@ export async function approveLocalFeed(city: string, candidate: DiscoveryCandida
 }
 
 export async function removeLocalFeed(id: string) {
-  await db.localFeedSource.delete({ where: { id } });
+  await db.localFeedSource.deleteMany({ where: { id } });
   revalidatePath("/");
 }
 
@@ -51,6 +51,6 @@ export async function addVenueSource(url: string): Promise<{ id: string; label: 
 }
 
 export async function removeVenueSource(id: string) {
-  await db.venueSource.delete({ where: { id } });
+  await db.venueSource.deleteMany({ where: { id } });
   revalidatePath("/");
 }
